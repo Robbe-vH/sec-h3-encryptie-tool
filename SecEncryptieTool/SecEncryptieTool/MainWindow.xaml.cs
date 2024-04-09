@@ -4,6 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 
 namespace SecEncryptieTool
 {
@@ -13,11 +14,33 @@ namespace SecEncryptieTool
     public partial class MainWindow : Window
     {
         public string? KeysFolder { get; set; }
+        public string? EncryptedImagesFolder { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
             LoadKeyFolder();
+        }
+
+        private void SetFolderKeyMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                DialogResult result = dialog.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
+                {
+                    string selectedFolder = dialog.SelectedPath;
+
+                    // Update the EncryptedImagesFolder variable
+                    EncryptedImagesFolder = selectedFolder;
+
+                    // Update the configuration file
+                    UpdateFolderInConfig(selectedFolder);
+
+                    System.Windows.MessageBox.Show($"Selected Folder for Encrypted Images: {selectedFolder}");
+                }
+            }
+
         }
 
         private void LoadKeyFolder()
@@ -39,7 +62,14 @@ namespace SecEncryptieTool
                 ConfigurationManager.RefreshSection("appSettings");
             }
         }
-
+        private void UpdateFolderInConfig(string folderPath)
+        {
+            // Update KeysFolder in app settings of configuration file
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings["KeysFolder"].Value = folderPath;
+            config.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection("appSettings");
+        }
         #region AES
 
         private void GenerateAESKeys_Click(object sender, RoutedEventArgs e)
@@ -133,6 +163,7 @@ namespace SecEncryptieTool
             DialogResult result = openFileDialog.ShowDialog();
             if (result == System.Windows.Forms.DialogResult.OK)
             {
+                DisplayImage(openFileDialog.FileName);
                 string imagePath = openFileDialog.FileName;
 
                 System.Windows.MessageBox.Show("Kies nu de AES Key", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -194,7 +225,6 @@ namespace SecEncryptieTool
             }
         }
 
-        //private void EncryptImageUsingAES(string imagePath, byte[] key, byte[] iv)
         private void EncryptImageUsingAES(string imagePath, string key, string iv)
         {
             if (key == null || iv == null)
@@ -215,8 +245,6 @@ namespace SecEncryptieTool
             {
                 using (Aes aesAlg = Aes.Create())
                 {
-                    //aesAlg.Key = key;
-                    //aesAlg.IV = iv;
                     aesAlg.Key = Convert.FromBase64String(key);
                     aesAlg.IV = Convert.FromBase64String(iv);
 
@@ -235,9 +263,7 @@ namespace SecEncryptieTool
                         }
                     }
 
-                    //string encryptedImagePath = Path.Combine(Path.GetDirectoryName(imagePath), Path.GetFileNameWithoutExtension(imagePath) + "_encrypted" + Path.GetExtension(imagePath));
-                    string encryptedImagePath = Path.Combine(Path.GetDirectoryName(imagePath), Path.GetFileNameWithoutExtension(imagePath) + "_encrypted" + Path.GetExtension(".txt"));
-                    //File.WriteAllBytes(encryptedImagePath, encryptedData);
+                    string encryptedImagePath = Path.Combine(EncryptedImagesFolder, Path.GetFileNameWithoutExtension(imagePath) + "_encrypted" + Path.GetExtension(".txt"));
                     File.WriteAllText(encryptedImagePath, encryptedImageBase64);
 
                     System.Windows.MessageBox.Show("Afbeelding is succesvol geencrypteerd.", "Let's gooo", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -248,8 +274,6 @@ namespace SecEncryptieTool
                 System.Windows.MessageBox.Show($"Fout bij het versleutelen van de afbeelding: {ex.Message}", "Kutzooi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        //private void DecryptImageUsingAES(string imagePath, byte[] key, byte[] iv)
         private void DecryptImageUsingAES(string imagePath, string key, string iv)
         {
             if (key == null || iv == null)
@@ -458,5 +482,28 @@ namespace SecEncryptieTool
         }
 
         #endregion RSA
+
+        #region image
+
+        private void DisplayImage(string imagePath)
+        {
+            if (!string.IsNullOrEmpty(imagePath))
+            {
+                try
+                {
+                    BitmapImage bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = new Uri(imagePath);
+                    bitmap.EndInit();
+                    imgDisplayed.Source = bitmap;
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Error: {ex.Message}");
+                }
+            }
+        }
+
+        #endregion image
     }
 }
