@@ -31,10 +31,8 @@ namespace SecEncryptieTool
                 {
                     string selectedFolder = dialog.SelectedPath;
 
-                    // Update the EncryptedImagesFolder variable
                     EncryptedImagesFolder = selectedFolder;
 
-                    // Update the configuration file
                     UpdateFolderInConfig(selectedFolder);
 
                     System.Windows.MessageBox.Show($"Selected Folder for Encrypted Images: {selectedFolder}");
@@ -64,7 +62,6 @@ namespace SecEncryptieTool
         }
         private void UpdateFolderInConfig(string folderPath)
         {
-            // Update KeysFolder in app settings of configuration file
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             config.AppSettings.Settings["KeysFolder"].Value = folderPath;
             config.Save(ConfigurationSaveMode.Modified);
@@ -74,15 +71,11 @@ namespace SecEncryptieTool
 
         private void GenerateAESKeys_Click(object sender, RoutedEventArgs e)
         {
-            //byte[] aesKey = GenerateAESKey();
-            //byte[] aesIV = GenerateAESIV();
             string aesKey = GenerateAESKey();
             string aesIV = GenerateAESIV();
 
             SaveAESKeyToFile(aesKey, aesIV);
         }
-
-        //private void SaveAESKeyToFile(byte[] aesKey, byte[] aesIV)
         private void SaveAESKeyToFile(string aesKey, string aesIV)
         {
             if (string.IsNullOrEmpty(KeysFolder))
@@ -107,8 +100,6 @@ namespace SecEncryptieTool
 
             try
             {
-                //File.WriteAllBytes(keyFilePath, aesKey);
-                //File.WriteAllBytes(ivFilePath, aesIV);
                 File.WriteAllText(keyFilePath, aesKey);
                 File.WriteAllText(ivFilePath, aesIV);
             }
@@ -119,24 +110,6 @@ namespace SecEncryptieTool
 
             System.Windows.MessageBox.Show($"Mooi, de AES keys zijn succesvol opgeslagen", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-
-        //private byte[] GenerateAESKey()
-        //{
-        //    using (Aes aesAlg = Aes.Create())
-        //    {
-        //        aesAlg.GenerateKey();
-        //        return aesAlg.Key;
-        //    }
-        //}
-
-        //private byte[] GenerateAESIV()
-        //{
-        //    using (Aes aesAlg = Aes.Create())
-        //    {
-        //        aesAlg.GenerateIV();
-        //        return aesAlg.IV;
-        //    }
-        //}
         private string GenerateAESKey()
         {
             using (Aes aesAlg = Aes.Create())
@@ -157,35 +130,35 @@ namespace SecEncryptieTool
 
         private void EncryptImageWithAES_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.MessageBox.Show("Kies de foto om te encrypteren.", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.png;*.jpeg;*.jpg)|*.png;*.jpeg;*.jpg";
-            DialogResult result = openFileDialog.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+            if (EncryptedImagesFolder == null)
             {
-                DisplayImage(openFileDialog.FileName);
-                string imagePath = openFileDialog.FileName;
-
-                System.Windows.MessageBox.Show("Kies nu de AES Key", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                openFileDialog.Filter = "Text files (*.txt)|*.txt";
-                result = openFileDialog.ShowDialog();
+                System.Windows.MessageBox.Show("Kies eerst via bovenstaand menu een folder om je bestand in op te slaan", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("Kies de foto om te encrypteren.", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
+                OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Filter = "Image files (*.png;*.jpeg;*.jpg)|*.png;*.jpeg;*.jpg";
+                DialogResult result = openFileDialog.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK)
                 {
-                    string aesKeyPath = openFileDialog.FileName;
-                    string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
-                    //System.Windows.MessageBox.Show("Kies nu de AES IV", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
-                    //result = openFileDialog.ShowDialog();
-                    //if (result == System.Windows.Forms.DialogResult.OK)
-                    //{
-                    //string aesIVPath = openFileDialog.FileName;
-                    //byte[] aesKey = File.ReadAllBytes(aesKeyPath);
-                    //byte[] aesIV = File.ReadAllBytes(aesIVPath);
-                    string aesKey = File.ReadAllText(aesKeyPath);
-                    string aesIV = File.ReadAllText(aesIVPath);
+                    DisplayImage(openFileDialog.FileName);
+                    string imagePath = openFileDialog.FileName;
 
-                    EncryptImageUsingAES(imagePath, aesKey, aesIV);
-                    //}
+                    System.Windows.MessageBox.Show("Kies nu de AES Key", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    openFileDialog.Filter = "Text files (*.txt)|*.txt";
+                    result = openFileDialog.ShowDialog();
+                    if (result == System.Windows.Forms.DialogResult.OK)
+                    {
+                        string aesKeyPath = openFileDialog.FileName;
+                        string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
+                        string aesKey = File.ReadAllText(aesKeyPath);
+                        string aesIV = File.ReadAllText(aesIVPath);
+
+                        EncryptImageUsingAES(imagePath, aesKey, aesIV);
+                    }
+                    ClearImage(openFileDialog.FileName);
                 }
             }
         }
@@ -208,19 +181,11 @@ namespace SecEncryptieTool
                 {
                     string aesKeyPath = openFileDialog.FileName;
                     string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
-                    //System.Windows.MessageBox.Show("Kies nu de AES IV", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
-                    //result = openFileDialog.ShowDialog();
-                    //if (result == System.Windows.Forms.DialogResult.OK)
-                    //{
-                    //string aesIVPath = openFileDialog.FileName;
 
-                        //byte[] aesKey = File.ReadAllBytes(aesKeyPath);
-                        //byte[] aesIV = File.ReadAllBytes(aesIVPath);
                         string aesKey = File.ReadAllText(aesKeyPath);
                         string aesIV = File.ReadAllText(aesIVPath);
 
                         DecryptImageUsingAES(encryptedImagePath, aesKey, aesIV);
-                    //}
                 }
             }
         }
@@ -502,6 +467,11 @@ namespace SecEncryptieTool
                     System.Windows.MessageBox.Show($"Error: {ex.Message}");
                 }
             }
+        }
+
+        private void ClearImage(string imagePath)
+        {
+            imgDisplayed.Source = null;
         }
 
         #endregion image

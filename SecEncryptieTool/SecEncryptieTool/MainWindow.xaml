@@ -5,8 +5,8 @@
     <Grid Background="#2E2E2E">
         <!-- Menu -->
         <Menu Background="#2E2E2E">
-            <MenuItem Header="_File">
-                <MenuItem Header="_Set Folder" Click="SetFolderKeyMenuItem_Click"/>
+            <MenuItem Header="_File" Foreground="#007ACC">
+                <MenuItem Background="#2E2E2E" Header="_Set Folder" Click="SetFolderKeyMenuItem_Click"/>
             </MenuItem>
         </Menu>
 
