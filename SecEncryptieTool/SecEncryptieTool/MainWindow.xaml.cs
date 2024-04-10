@@ -19,7 +19,24 @@ namespace SecEncryptieTool
         public MainWindow()
         {
             InitializeComponent();
+            ChooseDirectory();
             LoadKeyFolder();
+        }
+        private void ChooseDirectory()
+        {
+            System.Windows.MessageBox.Show("Kies een folder voor de sleutels","",MessageBoxButton.OK,MessageBoxImage.Information);
+            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            folderBrowserDialog.Description = "Selecteer een map voor de sleutels.";
+            DialogResult result = folderBrowserDialog.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                KeysFolder = folderBrowserDialog.SelectedPath;
+                System.Windows.MessageBox.Show("Gekozen map: " + KeysFolder);
+            }
+            else
+            {
+                Environment.Exit(0);
+            }
         }
 
         private void SetFolderKeyMenuItem_Click(object sender, RoutedEventArgs e)

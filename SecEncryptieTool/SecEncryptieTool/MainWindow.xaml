@@ -6,7 +6,8 @@
         <!-- Menu -->
         <Menu Background="#2E2E2E">
             <MenuItem Header="_File" Foreground="#007ACC">
-                <MenuItem Background="#2E2E2E" Header="_Set Folder" Click="SetFolderKeyMenuItem_Click"/>
+                <MenuItem Background="#2E2E2E" Header="_Set Folder Image" Click="SetFolderKeyMenuItem_Click"/>
+                <MenuItem Background="#2E2E2E" Header="_Set Folder Keys" Click="SetKeysFolder_Click"/>
             </MenuItem>
         </Menu>
 
@@ -48,10 +49,5 @@
                 <Image x:Name="imgDisplayed" Grid.Column="1" Grid.Row="1" Margin="5" Width="300" Height="300" Stretch="Uniform"/>
             </Border>
         </Grid>
-
-        <!-- Footer -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,20,20,10">
-            <Button Click="SetKeysFolder_Click" Content="Kies een folder" Background="#0078D7" Foreground="White" BorderBrush="#0078D7" Height="32" Width="102"/>
-        </StackPanel>
     </Grid>
 </Window>
