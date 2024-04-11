@@ -6,8 +6,8 @@
         <!-- Menu -->
         <Menu Background="#2E2E2E">
             <MenuItem Header="_File" Foreground="#007ACC">
-                <MenuItem Background="#2E2E2E" Header="_Set Folder Image" Click="SetFolderKeyMenuItem_Click"/>
-                <MenuItem Background="#2E2E2E" Header="_Set Folder Keys" Click="SetKeysFolder_Click"/>
+                <MenuItem Background="#2E2E2E" Header="_Set Folder Image" Click="SetFolderImageMenuItem_Click"/>
+                <MenuItem Background="#2E2E2E" Header="_Set Folder Keys" Click="SetFolderKeyMenuItem_Click"/>
             </MenuItem>
         </Menu>
 
@@ -43,9 +43,13 @@
                     <Button Click="DecryptAESWithRSA_Click" Content="Decrypteer AES sleutel" Background="#0078D7" Foreground="White" BorderBrush="#0078D7"/>
                 </StackPanel>
             </StackPanel>
-
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,20,385,10" RenderTransformOrigin="0.483,0.523">
+                <GroupBox Header="AES KEYS" TextElement.Foreground="#0078D7" BorderThickness="0">
+                    <ListBox x:Name="AeskeyList" Width="200" Height="150" Background="#2E2E2E" Foreground="White" BorderBrush="#0078D7" SelectionChanged="keyList_SelectionChanged"/>
+                </GroupBox>
+            </StackPanel>
             <!-- Image display -->
-            <Border Grid.Row="1" BorderBrush="#0078D7" BorderThickness="1" Margin="10,20,0,42" Grid.Column="1">
+            <Border Grid.Row="1" BorderBrush="#0078D7" BorderThickness="1" Margin="256,20,0,42" Grid.Column="1">
                 <Image x:Name="imgDisplayed" Grid.Column="1" Grid.Row="1" Margin="5" Width="300" Height="300" Stretch="Uniform"/>
             </Border>
         </Grid>

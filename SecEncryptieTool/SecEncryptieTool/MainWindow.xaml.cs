@@ -3,6 +3,7 @@ using System.Configuration;
 using System.IO;
 using System.Security.Cryptography;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
 
@@ -32,6 +33,12 @@ namespace SecEncryptieTool
             {
                 KeysFolder = folderBrowserDialog.SelectedPath;
                 System.Windows.MessageBox.Show("Gekozen map: " + KeysFolder);
+
+                Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                config.AppSettings.Settings["KeysFolder"].Value = KeysFolder;
+                config.Save(ConfigurationSaveMode.Modified);
+                ConfigurationManager.RefreshSection("appSettings");
+                PopulateListBox(KeysFolder);
             }
             else
             {
@@ -39,7 +46,7 @@ namespace SecEncryptieTool
             }
         }
 
-        private void SetFolderKeyMenuItem_Click(object sender, RoutedEventArgs e)
+        private void SetFolderImageMenuItem_Click(object sender, RoutedEventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())
             {
@@ -50,20 +57,17 @@ namespace SecEncryptieTool
 
                     EncryptedImagesFolder = selectedFolder;
 
-                    UpdateFolderInConfig(selectedFolder);
+                    Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    config.AppSettings.Settings["EncryptedImagesFolder"].Value = EncryptedImagesFolder;
+                    config.Save(ConfigurationSaveMode.Modified);
+                    ConfigurationManager.RefreshSection("appSettings");
 
                     System.Windows.MessageBox.Show($"Selected Folder for Encrypted Images: {selectedFolder}");
                 }
             }
 
         }
-
-        private void LoadKeyFolder()
-        {
-            KeysFolder = ConfigurationManager.AppSettings["KeysFolder"];
-        }
-
-        private void SetKeysFolder_Click(object sender, RoutedEventArgs e)
+        private void SetFolderKeyMenuItem_Click(object sender, RoutedEventArgs e)
         {
             FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
             DialogResult result = folderBrowserDialog.ShowDialog();
@@ -75,17 +79,49 @@ namespace SecEncryptieTool
                 config.AppSettings.Settings["KeysFolder"].Value = KeysFolder;
                 config.Save(ConfigurationSaveMode.Modified);
                 ConfigurationManager.RefreshSection("appSettings");
+                PopulateListBox(KeysFolder);
             }
         }
-        private void UpdateFolderInConfig(string folderPath)
+        private void LoadKeyFolder()
         {
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            config.AppSettings.Settings["KeysFolder"].Value = folderPath;
-            config.Save(ConfigurationSaveMode.Modified);
-            ConfigurationManager.RefreshSection("appSettings");
+            KeysFolder = ConfigurationManager.AppSettings["KeysFolder"];
+            EncryptedImagesFolder = ConfigurationManager.AppSettings["EncryptedImagesFolder"];
         }
-        #region AES
 
+        #region listBox
+        private void PopulateListBox(string directoryPath)
+        {
+            AeskeyList.Items.Clear();
+            try
+            {
+                string[] files = Directory.GetFiles(directoryPath);
+                foreach (string file in files)
+                {
+                    if (Path.GetFileName(file).ToLower().Contains("key"))
+                    {
+                        AeskeyList.Items.Add(Path.GetFileName(file));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void keyList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AeskeyList.SelectedItem != null)
+            {
+                string selectedFileName = AeskeyList.SelectedItem.ToString();
+
+                string selectedFilePath = Path.Combine(KeysFolder, selectedFileName);
+
+                System.Windows.MessageBox.Show("Selected file: " + selectedFilePath);
+            }
+        }
+        #endregion listBox
+        #region AES
+        #region generateAndSaveAesKey
         private void GenerateAESKeys_Click(object sender, RoutedEventArgs e)
         {
             string aesKey = GenerateAESKey();
@@ -110,22 +146,29 @@ namespace SecEncryptieTool
                 ivFilename = TxtKeyNaam.Text;
                 keyFilename += "_AesKey.txt";
                 ivFilename += "_AesIV.txt";
+
+                string keyFilePath = Path.Combine(KeysFolder, keyFilename);
+                string ivFilePath = Path.Combine(KeysFolder, ivFilename);
+
+                try
+                {
+                    File.WriteAllText(keyFilePath, aesKey);
+                    File.WriteAllText(ivFilePath, aesIV);
+                    PopulateListBox(KeysFolder);
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Oei, het is niet gelukt: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+
+                System.Windows.MessageBox.Show($"Mooi, de AES keys zijn succesvol opgeslagen", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-
-            string keyFilePath = Path.Combine(KeysFolder, keyFilename);
-            string ivFilePath = Path.Combine(KeysFolder, ivFilename);
-
-            try
+            else
             {
-                File.WriteAllText(keyFilePath, aesKey);
-                File.WriteAllText(ivFilePath, aesIV);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Oei, het is niet gelukt: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show("Geef eerst een naam in voor je sleutel", "How jong, wacht is", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 
-            System.Windows.MessageBox.Show($"Mooi, de AES keys zijn succesvol opgeslagen", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+
         }
         private string GenerateAESKey()
         {
@@ -144,7 +187,7 @@ namespace SecEncryptieTool
                 return Convert.ToBase64String(aesAlg.IV);
             }
         }
-
+        #endregion generateAndSaveAesKey
         private void EncryptImageWithAES_Click(object sender, RoutedEventArgs e)
         {
             if (EncryptedImagesFolder == null)
@@ -153,6 +196,12 @@ namespace SecEncryptieTool
             }
             else
             {
+                if (AeskeyList.SelectedItem == null)
+                {
+                    System.Windows.MessageBox.Show("Selecteer eerst een AES-sleutel in de lijst.", "Melding", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 System.Windows.MessageBox.Show("Kies de foto om te encrypteren.", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
                 OpenFileDialog openFileDialog = new OpenFileDialog();
                 openFileDialog.Filter = "Image files (*.png;*.jpeg;*.jpg)|*.png;*.jpeg;*.jpg";
@@ -162,19 +211,15 @@ namespace SecEncryptieTool
                     DisplayImage(openFileDialog.FileName);
                     string imagePath = openFileDialog.FileName;
 
-                    System.Windows.MessageBox.Show("Kies nu de AES Key", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // Get the selected key file from the list box
+                    string selectedKeyFileName = AeskeyList.SelectedItem.ToString();
+                    string aesKeyPath = Path.Combine(KeysFolder, selectedKeyFileName);
+                    string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
+                    string aesKey = File.ReadAllText(aesKeyPath);
+                    string aesIV = File.ReadAllText(aesIVPath);
 
-                    openFileDialog.Filter = "Text files (*.txt)|*.txt";
-                    result = openFileDialog.ShowDialog();
-                    if (result == System.Windows.Forms.DialogResult.OK)
-                    {
-                        string aesKeyPath = openFileDialog.FileName;
-                        string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
-                        string aesKey = File.ReadAllText(aesKeyPath);
-                        string aesIV = File.ReadAllText(aesIVPath);
+                    EncryptImageUsingAES(imagePath, aesKey, aesIV);
 
-                        EncryptImageUsingAES(imagePath, aesKey, aesIV);
-                    }
                     ClearImage(openFileDialog.FileName);
                 }
             }
