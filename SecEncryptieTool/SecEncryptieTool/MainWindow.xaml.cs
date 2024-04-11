@@ -124,10 +124,14 @@ namespace SecEncryptieTool
         #region generateAndSaveAesKey
         private void GenerateAESKeys_Click(object sender, RoutedEventArgs e)
         {
+            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            KeysFolder = folderBrowserDialog.SelectedPath;
+            
             string aesKey = GenerateAESKey();
             string aesIV = GenerateAESIV();
 
             SaveAESKeyToFile(aesKey, aesIV);
+            PopulateListBox(KeysFolder);
         }
         private void SaveAESKeyToFile(string aesKey, string aesIV)
         {
@@ -354,25 +358,28 @@ namespace SecEncryptieTool
 
         private void GenerateRSAKeys_Click(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrEmpty(KeysFolder))
+            {
+                System.Windows.MessageBox.Show("Selecteer eerst een map voor de RSA keys.", "How jong, wacht is", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string publicFilename = "RSAPublicKey";
+            string privateFilename = "RSAPrivateKey";
+
+            if (string.IsNullOrEmpty(TxtKeyNaam.Text))
+            {
+                System.Windows.MessageBox.Show("Geef eerst een naam in voor je sleutel", "How jong, wacht is", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            publicFilename = TxtKeyNaam.Text;
+            privateFilename = TxtKeyNaam.Text;
+            publicFilename += "_RsaPublic.xml";
+            privateFilename += "_RsaPrivate.xml";
+            
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048))
             {
-                if (string.IsNullOrEmpty(KeysFolder))
-                {
-                    System.Windows.MessageBox.Show("Selecteer eerst een map voor de RSA keys.", "How jong, wacht is", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                string publicFilename = "RSAPublicKey";
-                string privateFilename = "RSAPrivateKey";
-
-                if (TxtKeyNaam.Text != string.Empty)
-                {
-                    publicFilename = TxtKeyNaam.Text;
-                    privateFilename = TxtKeyNaam.Text;
-                    publicFilename += "_RsaPublic.xml";
-                    privateFilename += "_RsaPrivate.xml";
-                }
-
                 try
                 {
                     // public key
@@ -388,6 +395,7 @@ namespace SecEncryptieTool
                 catch (Exception ex)
                 {
                     System.Windows.MessageBox.Show($"Oei, het is niet gelukt: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
 
                 System.Windows.MessageBox.Show("Noice, RSA keys succesvol opgeslagen.", "Feest", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -457,11 +465,19 @@ namespace SecEncryptieTool
                 rsa.FromXmlString(publicKeyXml);
 
                 byte[] imageData = File.ReadAllBytes(imagePath);
-                byte[] encryptedData = rsa.Encrypt(imageData, true);
-                string encryptedImagePath = Path.Combine(Path.GetDirectoryName(imagePath), Path.GetFileNameWithoutExtension(imagePath) + "_encrypted_RSA" + Path.GetExtension(imagePath));
-                File.WriteAllBytes(encryptedImagePath, encryptedData);
+                byte[] encryptedData = rsa.Encrypt(imageData, false);
+        
+                // Show Dialog to Get output file name
+                var dialog = new System.Windows.Forms.SaveFileDialog();
+                dialog.Filter = "Text files (*.txt)|*.txt";
+                DialogResult result = dialog.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.FileName))
+                {
+                    string encryptedFileName = dialog.FileName;
+                    File.WriteAllText(encryptedFileName, Convert.ToBase64String(encryptedData));
 
-                System.Windows.MessageBox.Show("Key is succesvol versleuteld met RSA en opgeslagen.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    System.Windows.MessageBox.Show($"Key is succesvol versleuteld met RSA en opgeslagen in {encryptedFileName}.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -489,13 +505,21 @@ namespace SecEncryptieTool
                 RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
                 rsa.FromXmlString(privateKeyXml);
 
-                byte[] encryptedImageData = File.ReadAllBytes(encryptedImagePath);
-                byte[] decryptedData = rsa.Decrypt(encryptedImageData, true);
+                byte[] encryptedImageData = Convert.FromBase64String(File.ReadAllText(encryptedImagePath));
+                byte[] decryptedData = rsa.Decrypt(encryptedImageData, false);
 
-                string decryptedImagePath = Path.Combine(Path.GetDirectoryName(encryptedImagePath), "decrypted_RSA_" + Path.GetFileName(encryptedImagePath));
-                File.WriteAllBytes(decryptedImagePath, decryptedData);
+                // Show save file dialog to choose filename to save decrypted AES key
+                SaveFileDialog saveFileDialog = new SaveFileDialog();
+                saveFileDialog.Filter = "Text files (*.txt)|*.txt";
+                DialogResult result = saveFileDialog.ShowDialog();
 
-                System.Windows.MessageBox.Show("Key is succesvol ontsleuteld met RSA en opgeslagen.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    string decryptedFileName = saveFileDialog.FileName;
+                    File.WriteAllText(decryptedFileName, Convert.ToBase64String(decryptedData));
+
+                    System.Windows.MessageBox.Show($"Key is succesvol ontsleuteld met RSA en opgeslagen in {decryptedFileName}.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             catch (Exception ex)
             {
