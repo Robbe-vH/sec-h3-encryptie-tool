@@ -224,31 +224,29 @@ namespace SecEncryptieTool
                 }
             }
         }
-
         private void DecryptImageWithAES_Click(object sender, RoutedEventArgs e)
         {
+            if (AeskeyList.SelectedItem == null)
+            {
+                System.Windows.MessageBox.Show("Selecteer eerst een AES-sleutel in de lijst.", "Melding", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             System.Windows.MessageBox.Show("Kies de foto om te decrypteren.", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.png;*.jpeg;*.jpg)|*.png;*.jpeg;*.jpg;*.txt";
+            openFileDialog.Filter = "Text files (*.txt)|*.txt";
             DialogResult result = openFileDialog.ShowDialog();
             if (result == System.Windows.Forms.DialogResult.OK)
             {
                 string encryptedImagePath = openFileDialog.FileName;
 
-                System.Windows.MessageBox.Show("Kies nu de AES Key", "Melding", MessageBoxButton.OK, MessageBoxImage.Information);
+                string selectedKeyFileName = AeskeyList.SelectedItem.ToString();
+                string aesKeyPath = Path.Combine(KeysFolder, selectedKeyFileName);
+                string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
+                string aesKey = File.ReadAllText(aesKeyPath);
+                string aesIV = File.ReadAllText(aesIVPath);
 
-                openFileDialog.Filter = "Text files (*.txt)|*.txt";
-                result = openFileDialog.ShowDialog();
-                if (result == System.Windows.Forms.DialogResult.OK)
-                {
-                    string aesKeyPath = openFileDialog.FileName;
-                    string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
-
-                        string aesKey = File.ReadAllText(aesKeyPath);
-                        string aesIV = File.ReadAllText(aesIVPath);
-
-                        DecryptImageUsingAES(encryptedImagePath, aesKey, aesIV);
-                }
+                DecryptImageUsingAES(encryptedImagePath, aesKey, aesIV);
             }
         }
 
@@ -319,14 +317,10 @@ namespace SecEncryptieTool
             {
                 using (Aes aesAlg = Aes.Create())
                 {
-                    //aesAlg.Key = key;
-                    //aesAlg.IV = iv;
                     aesAlg.Key = Convert.FromBase64String(key);
                     aesAlg.IV = Convert.FromBase64String(iv);
 
                     ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-
-                    //byte[] encryptedImageData = File.ReadAllBytes(imagePath);
                     string base64EncryptedImageData = File.ReadAllText(imagePath);
                     byte[] encryptedImageData = Convert.FromBase64String(base64EncryptedImageData);
 
@@ -345,6 +339,7 @@ namespace SecEncryptieTool
                     File.WriteAllBytes(decryptedImagePath, decryptedData);
 
                     System.Windows.MessageBox.Show("Afbeelding is succesvol gedecrypteerd.", "Goeie", MessageBoxButton.OK, MessageBoxImage.Information);
+                    DisplayImage(decryptedImagePath);
                 }
             }
             catch (Exception ex)
