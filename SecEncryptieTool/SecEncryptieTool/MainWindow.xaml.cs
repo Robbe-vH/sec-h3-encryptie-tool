@@ -18,6 +18,10 @@ namespace SecEncryptieTool
         public string? KeysFolder { get; set; }
         public string? EncryptedImagesFolder { get; set; }
 
+        // Variables to store the file paths for hash validation
+        private string? filePath1;
+        private string? filePath2;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -507,7 +511,6 @@ namespace SecEncryptieTool
                 byte[] encryptedImageData = Convert.FromBase64String(File.ReadAllText(encryptedImagePath));
                 byte[] decryptedData = rsa.Decrypt(encryptedImageData, false);
 
-                // Show save file dialog to choose filename to save decrypted AES key
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
                 saveFileDialog.Filter = "Text files (*.txt)|*.txt";
                 DialogResult result = saveFileDialog.ShowDialog();
@@ -518,6 +521,12 @@ namespace SecEncryptieTool
                     File.WriteAllText(decryptedFileName, Encoding.UTF8.GetString(decryptedData));
 
                     System.Windows.MessageBox.Show($"Key is succesvol ontsleuteld met RSA en opgeslagen in {decryptedFileName}.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                    
+                    using (var sha256 = SHA256.Create())
+                    {
+                        byte[] hash = sha256.ComputeHash(decryptedData);
+                        HashBox.Text = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+                    }
                 }
             }
             catch (Exception ex)
@@ -555,5 +564,46 @@ namespace SecEncryptieTool
         }
 
         #endregion image
+        
+        #region hash
+        public string? HashingAlgorithmUsed { get; } = "SHA256";
+
+        private void ValidateHashButtonClick(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            DialogResult result = dialog.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                filePath1 = dialog.FileName;
+                result = dialog.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    filePath2 = dialog.FileName;
+
+                    using (var sha256 = SHA256.Create())
+                    {
+                        byte[] hash1 = sha256.ComputeHash(File.ReadAllBytes(filePath1));
+                        byte[] hash2 = sha256.ComputeHash(File.ReadAllBytes(filePath2));
+
+                        string hash1String = BitConverter.ToString(hash1).Replace("-", "").ToLowerInvariant();
+                        string hash2String = BitConverter.ToString(hash2).Replace("-", "").ToLowerInvariant();
+
+                        string message;
+
+                        if (hash1String == hash2String)
+                        {
+                            message = "Correcte hash!";
+                        }
+                        else
+                        {
+                            message = "De hashes matchen niet!.";
+                        }
+
+                        System.Windows.MessageBox.Show($"Het gebruikte hashing algoritme is: {HashingAlgorithmUsed}" + $"File 1 Hash: {hash1String}\nFile 2 Hash: {hash2String}\n{message}", "Hash Validation", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            }
+        }
+        #endregion hash
     }
 }
