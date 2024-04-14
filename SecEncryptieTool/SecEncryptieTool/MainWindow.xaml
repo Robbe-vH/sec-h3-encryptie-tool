@@ -33,7 +33,7 @@
                 <Label Content="Key naam:" Foreground="#007ACC" VerticalAlignment="Center"/>
                 <TextBox Name="TxtKeyNaam" Width="282" BorderBrush="#0078D7" BorderThickness="1"/>
                 
-                <TextBox Name="HashBox" Width="282" BorderBrush="#0078D7" BorderThickness="1"/>
+                <TextBox Name="HashBox" Width="282" BorderBrush="#0078D7" BorderThickness="1" TextWrapping="Wrap"/>
             </StackPanel>
 
             <!-- Encryption/decryption -->
