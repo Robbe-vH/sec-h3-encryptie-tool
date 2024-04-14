@@ -125,7 +125,6 @@ namespace SecEncryptieTool
         private void GenerateAESKeys_Click(object sender, RoutedEventArgs e)
         {
             FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
-            //KeysFolder = folderBrowserDialog.SelectedPath;
             
             string aesKey = GenerateAESKey();
             string aesIV = GenerateAESIV();
@@ -215,7 +214,6 @@ namespace SecEncryptieTool
                     DisplayImage(openFileDialog.FileName);
                     string imagePath = openFileDialog.FileName;
 
-                    // Get the selected key file from the list box
                     string selectedKeyFileName = AeskeyList.SelectedItem.ToString();
                     string aesKeyPath = Path.Combine(KeysFolder, selectedKeyFileName);
                     string aesIVPath = aesKeyPath.Substring(0, aesKeyPath.Length - 11) + "_AesIV.txt";
