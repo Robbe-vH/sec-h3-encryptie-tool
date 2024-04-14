@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -514,7 +515,7 @@ namespace SecEncryptieTool
                 if (result == System.Windows.Forms.DialogResult.OK)
                 {
                     string decryptedFileName = saveFileDialog.FileName;
-                    File.WriteAllText(decryptedFileName, Convert.ToBase64String(decryptedData));
+                    File.WriteAllText(decryptedFileName, Encoding.UTF8.GetString(decryptedData));
 
                     System.Windows.MessageBox.Show($"Key is succesvol ontsleuteld met RSA en opgeslagen in {decryptedFileName}.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
